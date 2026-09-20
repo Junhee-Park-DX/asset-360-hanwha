@@ -297,3 +297,57 @@ Use [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/
 - Before committing: review **`git status`** and **`git diff`** (including staged); unstage and commit separately if the index mixes unrelated concerns.
 
 ---
+
+## 10. Dependencies & Environments
+
+**Never install project dependencies globally. Use the narrowest appropriate project-local environment.**
+
+For **any language, framework, library, or package manager not explicitly listed below**, first inspect the project to determine its existing dependency-management system and follow its standard project-local approach. Do not assume global installation is appropriate.
+
+### Python
+
+* Use `uv` and a project-local `.venv`.
+* Use `uv add`, `uv remove`, `uv sync`, and `uv run`.
+* Never use global `pip`, `pip3`, `pip install --user`, or `sudo pip`.
+
+### Node.js
+
+* Use the project's existing package manager.
+* Keep dependencies local to the project and recorded in the appropriate manifest + lockfile.
+* Never use `npm install -g` or `sudo npm install` for project dependencies.
+
+### Other Languages / Ecosystems
+
+* Use the project's existing package manager and local environment/virtual environment when available.
+* Follow the ecosystem's standard project-local dependency mechanism.
+* Never install libraries globally when they can be installed locally.
+* Inspect existing configuration and lockfiles before installing anything.
+
+### Homebrew
+
+* Use Homebrew only for genuine system-level tools.
+* Check whether a package is already installed before installing it.
+* Do not modify or remove unrelated Homebrew packages.
+* Record project-required Homebrew packages in `Brewfile`.
+* Do not add unrelated existing Homebrew packages to `Brewfile`.
+
+## Project State
+
+* `plan.md` = current project state, decisions, blockers, and next steps.
+* `prompt.md` = handoff context for another LLM.
+* Keep both based on the actual repository state; never invent progress.
+
+When context usage approaches ~80–85%:
+
+1. Finish the current atomic task.
+2. Update `plan.md`.
+3. Update `prompt.md` if a handoff is needed.
+4. Check the repository state and commit meaningful work when appropriate.
+5. Start a fresh context rather than beginning another major task.
+
+## Safety
+
+* Never use destructive commands to discard user work without permission.
+* Before system-wide or potentially destructive changes, explain what will change and why.
+* When unsure where a dependency belongs, prefer a project-local environment.
+

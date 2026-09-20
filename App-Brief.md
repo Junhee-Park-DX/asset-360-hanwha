@@ -8,7 +8,7 @@ owner: ""
 userCount: ""
 businessValue: ""
 milestones: ""
-repoUrl: "https://github.com/ugl2alpaca/asset-360-hanwha"
+repoUrl: "https://github.com/Junhee-Park-DX/asset-360-hanwha"
 userRole: "Operations Analyst / Reliability Engineer at an industrial facility. Reviews shift reports/alarms each morning; when an asset is flagged, investigates its history, current state, and documentation to brief the maintenance team. Works primarily at a desk in an office, occasionally the control room, on a standard desktop/laptop."
 currentProblem: "Even a well-built \"Asset 360\" tool typically still splits the workflow across a search/home screen and a separate detail page (or, as in the sibling asset-360 app, a Dashboard/Security split) — so the analyst still loses their search/browse context every time they open an asset. Separately, nothing in the legacy workflow (or in a typical Asset 360 build) tells anyone whether the digital twin data itself is complete: whether an asset actually has time series, work orders, documents, or a 3D model mapped, versus silently missing one and nobody noticing."
 oneSentenceStory: "As an Operations Analyst, I want to search or browse for equipment and see its full 360° detail — time series, work orders, documents, and 3D location — on one page without navigating away, so that I can investigate faster and trust that I'm looking at complete, correct data."
@@ -31,7 +31,7 @@ reviewedSections:
 - **Expected users:**
 - **Business value:**
 - **Milestones:**
-- **Repository:** https://github.com/ugl2alpaca/asset-360-hanwha
+- **Repository:** https://github.com/Junhee-Park-DX/asset-360-hanwha
 - **App externalId:** asset-360-hanwha
 - **Infra:** appsApi
 

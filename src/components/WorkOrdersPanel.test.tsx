@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ServicesReactContext, type Services } from '../context/services';
 import type { WorkOrderSummary } from '../services/types';
+import { useWorkOrdersPanelViewModel } from '../viewmodels/useWorkOrdersPanelViewModel';
 
 import { WorkOrdersPanel } from './WorkOrdersPanel';
 
@@ -36,6 +37,13 @@ const workOrder: WorkOrderSummary = {
   scheduledEndTime: null,
 };
 
+// AssetDetailContent owns the ViewModel call (per CLAUDE.md §5); this
+// harness mirrors that so the panel is tested through its real prop shape.
+function Harness() {
+  const vm = useWorkOrdersPanelViewModel(assetId);
+  return <WorkOrdersPanel vm={vm} />;
+}
+
 function renderWithServices(listForAsset: () => Promise<WorkOrderSummary[]>) {
   const services = {
     workOrdersService: { listForAsset, retrieve: vi.fn() },
@@ -43,7 +51,7 @@ function renderWithServices(listForAsset: () => Promise<WorkOrderSummary[]>) {
   } as unknown as Services;
   return render(
     <ServicesReactContext.Provider value={services}>
-      <WorkOrdersPanel assetId={assetId} />
+      <Harness />
     </ServicesReactContext.Provider>
   );
 }

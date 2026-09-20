@@ -10,8 +10,8 @@ import {
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 import { instanceKey } from '../services/instanceKey';
-import type { Datapoint, InstanceRef, TimeSeriesSummary } from '../services/types';
-import { useTimeSeriesPanelViewModel, WINDOW_OPTIONS } from '../viewmodels/useTimeSeriesPanelViewModel';
+import type { Datapoint, TimeSeriesSummary } from '../services/types';
+import { WINDOW_OPTIONS, type TimeSeriesPanelViewModel } from '../viewmodels/useTimeSeriesPanelViewModel';
 
 import { PanelEmptyState } from './PanelEmptyState';
 
@@ -42,9 +42,15 @@ function buildChartRows(datapointsBySeries: Record<string, Datapoint[]>): ChartR
   return Array.from(byTimestamp.values()).sort((a, b) => a.timestamp - b.timestamp);
 }
 
-export function TimeSeriesPanel({ assetId }: { assetId: InstanceRef }) {
-  const { seriesListState, selectedSeriesIds, toggleSeries, windowId, setWindowId, chartState, refresh } =
-    useTimeSeriesPanelViewModel(assetId);
+/**
+ * `vm` is owned by `AssetDetailContent` (called once there, per CLAUDE.md
+ * §5) and passed down rather than called again here — the governance
+ * scorecard needs this exact same series list just to count it, and a
+ * second independent fetch here would double the network calls for every
+ * asset selection.
+ */
+export function TimeSeriesPanel({ vm }: { vm: TimeSeriesPanelViewModel }) {
+  const { seriesListState, selectedSeriesIds, toggleSeries, windowId, setWindowId, chartState, refresh } = vm;
 
   if (seriesListState.status !== 'success') {
     return (

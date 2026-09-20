@@ -1,13 +1,23 @@
 import { Badge } from '@cognite/aura/components/badge';
 import { Skeleton } from '@cognite/aura/components/skeleton';
 
-import type { InstanceRef } from '../services/types';
-import { useAssetGovernanceViewModel } from '../viewmodels/useAssetGovernanceViewModel';
+import type { PanelState } from '../viewmodels/panelState';
 
 interface ScorecardItem {
   label: string;
   populated: boolean;
   detail: string;
+}
+
+function countOf(state: PanelState<unknown[]>): number | null {
+  return state.status === 'success' ? state.data.length : null;
+}
+
+interface AssetGovernanceScorecardProps {
+  timeSeriesState: PanelState<unknown[]>;
+  workOrdersState: PanelState<unknown[]>;
+  documentsState: PanelState<unknown[]>;
+  has3DMapping: boolean;
 }
 
 /**
@@ -17,11 +27,21 @@ interface ScorecardItem {
  * time. A populated dimension gets the app's `fjord` brand accent; a zero or
  * missing one gets the `warning` semantic variant — a real status signal,
  * not decoration (SC-007).
+ *
+ * The three list states are owned by `AssetDetailContent` (each panel's own
+ * ViewModel, called once there) and passed in here rather than re-fetched —
+ * this scorecard needs the exact same lists the Time series/Work
+ * orders/Documents panels already fetch just to count them, and an
+ * independent fetch here would double the network calls for every asset
+ * selection.
  */
-export function AssetGovernanceScorecard({ assetId, has3DMapping }: { assetId: InstanceRef; has3DMapping: boolean }) {
-  const { state } = useAssetGovernanceViewModel(assetId, has3DMapping);
-
-  if (state.status === 'loading') {
+export function AssetGovernanceScorecard({
+  timeSeriesState,
+  workOrdersState,
+  documentsState,
+  has3DMapping,
+}: AssetGovernanceScorecardProps) {
+  if (timeSeriesState.status === 'loading' || workOrdersState.status === 'loading' || documentsState.status === 'loading') {
     return (
       <section className="flex flex-wrap gap-2 rounded border p-4" aria-label="Data governance scorecard">
         <Skeleton className="h-6 w-24" />
@@ -32,15 +52,14 @@ export function AssetGovernanceScorecard({ assetId, has3DMapping }: { assetId: I
     );
   }
 
-  if (state.status !== 'success') {
-    return null;
-  }
+  const timeSeriesCount = countOf(timeSeriesState);
+  const workOrdersCount = countOf(workOrdersState);
+  const documentsCount = countOf(documentsState);
 
-  const { timeSeriesCount, workOrdersCount, documentsCount } = state.data;
   const items: ScorecardItem[] = [
-    { label: 'Time series', populated: timeSeriesCount > 0, detail: `${timeSeriesCount} linked` },
-    { label: 'Work orders', populated: workOrdersCount > 0, detail: `${workOrdersCount} linked` },
-    { label: 'Documents', populated: documentsCount > 0, detail: `${documentsCount} linked` },
+    { label: 'Time series', populated: (timeSeriesCount ?? 0) > 0, detail: timeSeriesCount === null ? '—' : `${timeSeriesCount} linked` },
+    { label: 'Work orders', populated: (workOrdersCount ?? 0) > 0, detail: workOrdersCount === null ? '—' : `${workOrdersCount} linked` },
+    { label: 'Documents', populated: (documentsCount ?? 0) > 0, detail: documentsCount === null ? '—' : `${documentsCount} linked` },
     { label: '3D mapping', populated: has3DMapping, detail: has3DMapping ? 'Mapped' : 'Not mapped' },
   ];
 

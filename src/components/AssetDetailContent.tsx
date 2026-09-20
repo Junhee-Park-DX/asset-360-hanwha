@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 
 import type { AssetSummary, InstanceRef } from '../services/types';
 import { useAssetHeaderViewModel } from '../viewmodels/useAssetHeaderViewModel';
+import { useDocumentsPanelViewModel } from '../viewmodels/useDocumentsPanelViewModel';
+import { useTimeSeriesPanelViewModel } from '../viewmodels/useTimeSeriesPanelViewModel';
+import { useWorkOrdersPanelViewModel } from '../viewmodels/useWorkOrdersPanelViewModel';
 
 import { AssetGovernanceScorecard } from './AssetGovernanceScorecard';
 import { AssetHeader } from './AssetHeader';
@@ -27,9 +30,18 @@ interface AssetDetailContentProps {
  * FR-004). No "back" affordance — the navigator (search + tree) stays
  * visible alongside this content on the same page, so there's nowhere to
  * "return" from.
+ *
+ * The Time series/Work orders/Documents ViewModels are called once here
+ * (per CLAUDE.md §5) and passed down to both their own panel and the
+ * governance scorecard, which needs the same lists just to count them —
+ * calling each ViewModel a second time inside the scorecard would double
+ * the network calls on every asset selection.
  */
 export function AssetDetailContent({ assetId, recordVisit }: AssetDetailContentProps) {
   const { state: headerState, refetch: refetchHeader } = useAssetHeaderViewModel(assetId);
+  const timeSeriesVM = useTimeSeriesPanelViewModel(assetId);
+  const workOrdersVM = useWorkOrdersPanelViewModel(assetId);
+  const documentsVM = useDocumentsPanelViewModel(assetId);
 
   useEffect(() => {
     if (headerState.status === 'success') {
@@ -43,22 +55,29 @@ export function AssetDetailContent({ assetId, recordVisit }: AssetDetailContentP
   return (
     <main className="flex flex-col gap-4 p-4">
       <AssetHeader state={headerState} onRetry={refetchHeader} />
-      {headerState.status === 'success' ? <AssetGovernanceScorecard assetId={assetId} has3DMapping={has3DMapping} /> : null}
-      {headerState.status === 'success' ? <ThreeDPreviewPanel assetId={assetId} has3DMapping={has3DMapping} /> : null}
+      {headerState.status === 'success' ? (
+        <AssetGovernanceScorecard
+          timeSeriesState={timeSeriesVM.seriesListState}
+          workOrdersState={workOrdersVM.state}
+          documentsState={documentsVM.state}
+          has3DMapping={has3DMapping}
+        />
+      ) : null}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <section aria-label="Time series" className="rounded border">
           <h2 className="border-b p-3 text-sm font-medium">Time series</h2>
-          <TimeSeriesPanel assetId={assetId} />
+          <TimeSeriesPanel vm={timeSeriesVM} />
         </section>
         <section aria-label="Work orders" className="rounded border">
           <h2 className="border-b p-3 text-sm font-medium">Work orders</h2>
-          <WorkOrdersPanel assetId={assetId} />
+          <WorkOrdersPanel vm={workOrdersVM} />
         </section>
         <section aria-label="Documents" className="rounded border">
           <h2 className="border-b p-3 text-sm font-medium">Documents</h2>
-          <DocumentsPanel assetId={assetId} />
+          <DocumentsPanel vm={documentsVM} />
         </section>
       </div>
+      {headerState.status === 'success' ? <ThreeDPreviewPanel assetId={assetId} has3DMapping={has3DMapping} /> : null}
     </main>
   );
 }

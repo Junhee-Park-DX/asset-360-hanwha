@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ServicesReactContext, type Services } from '../context/services';
 import type { DocumentSummary } from '../services/types';
+import { useDocumentsPanelViewModel } from '../viewmodels/useDocumentsPanelViewModel';
 
 import { DocumentsPanel } from './DocumentsPanel';
 
@@ -56,6 +57,13 @@ const excelDocument: DocumentSummary = {
   previewKind: 'unsupported',
 };
 
+// AssetDetailContent owns the ViewModel call (per CLAUDE.md §5); this
+// harness mirrors that so the panel is tested through its real prop shape.
+function Harness() {
+  const vm = useDocumentsPanelViewModel(assetId);
+  return <DocumentsPanel vm={vm} />;
+}
+
 function renderWithServices(
   listForAsset: () => Promise<DocumentSummary[]>,
   getDownloadUrl: () => Promise<string | null> = () => Promise.resolve('https://example.test/file')
@@ -66,7 +74,7 @@ function renderWithServices(
   } as unknown as Services;
   return render(
     <ServicesReactContext.Provider value={services}>
-      <DocumentsPanel assetId={assetId} />
+      <Harness />
     </ServicesReactContext.Provider>
   );
 }
@@ -84,7 +92,7 @@ describe('DocumentsPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /preview/i }));
 
-    expect(screen.getByTestId('file-viewer')).toHaveTextContent('sp_files:PID-1');
+    await waitFor(() => expect(screen.getByTestId('file-viewer')).toHaveTextContent('sp_files:PID-1'));
   });
 
   it('offers a working download action instead of inline preview for unsupported types (FR-010)', async () => {

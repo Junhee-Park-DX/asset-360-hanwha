@@ -1,14 +1,17 @@
-import { useCogniteSdk } from '@cognite/app-sdk/react';
 import { Button } from '@cognite/aura/components/button';
 import { DataGrid } from '@cognite/aura/data-grid';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 
-import { CogniteFileViewer } from '../cognite-file-viewer';
-import type { DocumentSummary, InstanceRef } from '../services/types';
-import { useDocumentsPanelViewModel } from '../viewmodels/useDocumentsPanelViewModel';
+import type { DocumentSummary } from '../services/types';
+import type { DocumentsPanelViewModel } from '../viewmodels/useDocumentsPanelViewModel';
 
 import { PanelEmptyState } from './PanelEmptyState';
+
+// Lazy-loaded so react-pdf/pdf.js only enter the bundle once a user actually
+// clicks "Preview" on a document, instead of shipping in the app's eager
+// main chunk on every load (same pattern as ThreeDViewer's reveal-widget load).
+const DocumentPreview = lazy(() => import('./DocumentPreview'));
 
 function formatDate(timestamp: number | null): string {
   return timestamp ? new Date(timestamp).toLocaleDateString() : '—';
@@ -29,33 +32,15 @@ function DownloadLink({ document, download }: { document: DocumentSummary; downl
   );
 }
 
-function DocumentPreview({ document, onClose }: { document: DocumentSummary; onClose: () => void }) {
-  // CogniteFileViewer is a vendored third-party component that requires the
-  // raw SDK client as a prop — it isn't one of this app's own CDF calls, so
-  // it stays outside the service/ViewModel layer.
-  const client = useCogniteSdk();
-  return (
-    <div className="flex flex-col gap-2 border-t p-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium">{document.name}</span>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Close
-        </Button>
-      </div>
-      {/* CogniteFileViewer renders PDFs via pdf.js (no embedded-script execution)
-          and images via a plain <img>, inside this app's own sandboxed/CSP'd
-          origin — no raw <iframe>/<embed> of untrusted file content (FR-010a). */}
-      <CogniteFileViewer
-        source={{ type: 'instanceId', space: document.instanceId.space, externalId: document.instanceId.externalId }}
-        client={client}
-        style={{ width: '100%', height: '480px' }}
-      />
-    </div>
-  );
-}
-
-export function DocumentsPanel({ assetId }: { assetId: InstanceRef }) {
-  const { state, refetch, download } = useDocumentsPanelViewModel(assetId);
+/**
+ * `vm` is owned by `AssetDetailContent` (called once there, per CLAUDE.md
+ * §5) and passed down rather than called again here — the governance
+ * scorecard needs this exact same list just to count it, and a second
+ * independent fetch here would double the network calls for every asset
+ * selection.
+ */
+export function DocumentsPanel({ vm }: { vm: DocumentsPanelViewModel }) {
+  const { state, refetch, download } = vm;
   const [openId, setOpenId] = useState<string | null>(null);
 
   const columns = useMemo<ColumnDef<DocumentSummary>[]>(
@@ -116,7 +101,11 @@ export function DocumentsPanel({ assetId }: { assetId: InstanceRef }) {
       <div className="h-72">
         <DataGrid aria-label="Documents" data={state.data} columns={columns} getRowId={(document) => document.instanceId.externalId} size="compact" />
       </div>
-      {openDocument ? <DocumentPreview document={openDocument} onClose={() => setOpenId(null)} /> : null}
+      {openDocument ? (
+        <Suspense fallback={<PanelEmptyState kind="loading" emptyMessage="" />}>
+          <DocumentPreview document={openDocument} onClose={() => setOpenId(null)} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

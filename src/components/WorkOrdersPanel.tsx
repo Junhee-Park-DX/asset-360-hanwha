@@ -4,8 +4,8 @@ import { DataGrid } from '@cognite/aura/data-grid';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 
-import type { InstanceRef, WorkOrderSummary } from '../services/types';
-import { useWorkOrdersPanelViewModel } from '../viewmodels/useWorkOrdersPanelViewModel';
+import type { WorkOrderSummary } from '../services/types';
+import type { WorkOrdersPanelViewModel } from '../viewmodels/useWorkOrdersPanelViewModel';
 
 import { PanelEmptyState } from './PanelEmptyState';
 
@@ -33,8 +33,15 @@ function WorkOrderDetail({ workOrder, onClose }: { workOrder: WorkOrderSummary; 
   );
 }
 
-export function WorkOrdersPanel({ assetId }: { assetId: InstanceRef }) {
-  const { state, refetch } = useWorkOrdersPanelViewModel(assetId);
+/**
+ * `vm` is owned by `AssetDetailContent` (called once there, per CLAUDE.md
+ * §5) and passed down rather than called again here — the governance
+ * scorecard needs this exact same list just to count it, and a second
+ * independent fetch here would double the network calls for every asset
+ * selection.
+ */
+export function WorkOrdersPanel({ vm }: { vm: WorkOrdersPanelViewModel }) {
+  const { state, refetch } = vm;
   const [openId, setOpenId] = useState<string | null>(null);
 
   const columns = useMemo<ColumnDef<WorkOrderSummary>[]>(

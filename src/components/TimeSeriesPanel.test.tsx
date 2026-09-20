@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ServicesReactContext, type Services } from '../context/services';
 import type { TimeSeriesSummary } from '../services/types';
+import { useTimeSeriesPanelViewModel } from '../viewmodels/useTimeSeriesPanelViewModel';
 
 import { TimeSeriesPanel } from './TimeSeriesPanel';
 
@@ -11,6 +12,13 @@ const assetId = { space: 'sp', externalId: 'PUMP-101' };
 const seriesA = { space: 'sp', externalId: 'FLOW' };
 
 const seriesList: TimeSeriesSummary[] = [{ instanceId: seriesA, name: 'Flow rate', description: '', unit: 'm3/h' }];
+
+// AssetDetailContent owns the ViewModel call (per CLAUDE.md §5); this
+// harness mirrors that so the panel is tested through its real prop shape.
+function Harness() {
+  const vm = useTimeSeriesPanelViewModel(assetId);
+  return <TimeSeriesPanel vm={vm} />;
+}
 
 function renderWithServices(overrides: {
   retrieveLatestTimestamp?: () => Promise<number | null>;
@@ -26,7 +34,7 @@ function renderWithServices(overrides: {
   } as unknown as Services;
   return render(
     <ServicesReactContext.Provider value={services}>
-      <TimeSeriesPanel assetId={assetId} />
+      <Harness />
     </ServicesReactContext.Provider>
   );
 }
@@ -62,7 +70,7 @@ describe('TimeSeriesPanel', () => {
     await userEvent.click(seriesCheckbox());
     await waitFor(() => expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument());
 
-    await userEvent.click(screen.getByRole('tab', { name: '24 hours' }));
+    await userEvent.click(screen.getByRole('tab', { name: '24h' }));
 
     await waitFor(() =>
       expect(retrieveDatapoints).toHaveBeenLastCalledWith([seriesA], { start: 9000 - 24 * 60 * 60 * 1000, end: 9000 })

@@ -1,0 +1,16 @@
+{
+  "name": "Asset 360 Investigation Workspace (Hanwha)",
+  "description": "A Flows application",
+  "externalId": "asset-360-hanwha",
+  "versionTag": "0.0.1",
+  "infra": "appsApi",
+  "deployments": [
+    {
+      "org": "publicdata",
+      "project": "publicdatacdm",
+      "baseUrl": "https://api.cognitedata.com",
+      "deployClientId": "",
+      "deploySecretName": "PUBLICDATA_PUBLICDATACDM_API"
+    }
+  ]
+}

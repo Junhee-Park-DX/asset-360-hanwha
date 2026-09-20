@@ -11,11 +11,14 @@ import { useAsyncPanelData } from './useAsyncPanelData';
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
+// Short labels ("24h" not "24 hours") — the full-word labels made this
+// 4-segment control wider than its panel could ever fit once the navigator
+// is expanded, overflowing the panel's border rather than shrinking.
 export const WINDOW_OPTIONS = [
-  { id: '24h', label: '24 hours', ms: 24 * HOUR_MS },
-  { id: '7d', label: '7 days', ms: 7 * DAY_MS },
-  { id: '30d', label: '30 days', ms: 30 * DAY_MS },
-  { id: '90d', label: '90 days', ms: 90 * DAY_MS },
+  { id: '24h', label: '24h', ms: 24 * HOUR_MS },
+  { id: '7d', label: '7d', ms: 7 * DAY_MS },
+  { id: '30d', label: '30d', ms: 30 * DAY_MS },
+  { id: '90d', label: '90d', ms: 90 * DAY_MS },
 ] as const;
 
 export type WindowOptionId = (typeof WINDOW_OPTIONS)[number]['id'];
@@ -67,6 +70,21 @@ export function useTimeSeriesPanelViewModel(assetId: InstanceRef): TimeSeriesPan
 
   const [selectedSeriesIds, setSelectedSeriesIds] = useState<InstanceRef[]>([]);
   const [windowId, setWindowId] = useState<WindowOptionId>(DEFAULT_WINDOW_ID);
+
+  // Reset the selection when the asset changes — otherwise a series picked
+  // for the previous asset stays selected, and its datapoints keep fetching
+  // successfully (the series instance itself still exists in CDF, just not
+  // linked to the newly-selected asset), silently showing stale data for
+  // the wrong asset. "Adjust state during render" (React's own sanctioned
+  // pattern, same technique useAsyncPanelData already uses for its own
+  // deps-changed reset) rather than a useEffect, so the reset lands on the
+  // same render as the assetId change — no stale-chart flash first.
+  const assetKey = instanceKey(assetId);
+  const [trackedAssetKey, setTrackedAssetKey] = useState(assetKey);
+  if (assetKey !== trackedAssetKey) {
+    setTrackedAssetKey(assetKey);
+    setSelectedSeriesIds([]);
+  }
 
   const fetchChartData = async (): Promise<ChartData> => {
     if (selectedSeriesIds.length === 0) return { range: null, datapointsBySeries: {} };

@@ -78,6 +78,28 @@ describe('useTimeSeriesPanelViewModel', () => {
     );
   });
 
+  it('clears the selected series when the asset changes, instead of re-fetching the old series for the new asset', async () => {
+    const otherAssetId = { space: 'sp', externalId: 'PUMP-102' };
+    const services = makeServices();
+    vi.mocked(services.timeSeriesService.listForAsset).mockImplementation((id) =>
+      Promise.resolve(id.externalId === assetId.externalId ? seriesList : [])
+    );
+    const { result, rerender } = renderHook(({ id }) => useTimeSeriesPanelViewModel(id), {
+      wrapper: wrapperFor(services),
+      initialProps: { id: assetId },
+    });
+    await waitFor(() => expect(result.current.seriesListState.status).toBe('success'));
+    act(() => result.current.toggleSeries(seriesA));
+    await waitFor(() => expect(result.current.selectedSeriesIds).toEqual([seriesA]));
+
+    rerender({ id: otherAssetId });
+
+    expect(result.current.selectedSeriesIds).toEqual([]);
+    await waitFor(() =>
+      expect(result.current.chartState).toEqual({ status: 'success', data: { range: null, datapointsBySeries: {} } })
+    );
+  });
+
   it('changing the window re-fetches with the new range without leaving the view (FR-006)', async () => {
     const services = makeServices();
     const { result } = renderHook(() => useTimeSeriesPanelViewModel(assetId), { wrapper: wrapperFor(services) });
